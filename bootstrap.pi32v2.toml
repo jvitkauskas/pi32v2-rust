@@ -1,0 +1,20 @@
+# Build rustc for pi32v2 against the pi32v2-llvm fork's LLVM (see README-PI32V2.md):
+#   cp bootstrap.pi32v2.toml bootstrap.toml   # and set llvm-config below
+#   ./x.py build --stage 1 library
+change-id = "ignore"
+
+[llvm]
+download-ci-llvm = false
+
+[build]
+extended = false
+docs = false
+tools = []
+
+[rust]
+channel = "dev"
+
+[target.x86_64-unknown-linux-gnu]
+# an LLVM built from https://github.com/jvitkauskas/pi32v2-llvm with -DLLVM_TARGETS_TO_BUILD=X86
+# -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=PI32V2, installed; the host's backend is needed for build scripts
+llvm-config = "/path/to/llvm-rust/bin/llvm-config"

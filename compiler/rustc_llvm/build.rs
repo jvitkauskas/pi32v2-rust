@@ -14,6 +14,7 @@ const OPTIONAL_COMPONENTS: &[&str] = &[
     "aarch64",
     "amdgpu",
     "avr",
+    "pi32v2",
     "loongarch",
     "m68k",
     "csky",
