@@ -128,6 +128,14 @@ pub fn initialize_available_targets() {
         LLVMInitializeAVRAsmParser
     );
     init_target!(
+        llvm_component = "pi32v2",
+        LLVMInitializePI32V2TargetInfo,
+        LLVMInitializePI32V2Target,
+        LLVMInitializePI32V2TargetMC,
+        LLVMInitializePI32V2AsmPrinter,
+        LLVMInitializePI32V2AsmParser
+    );
+    init_target!(
         llvm_component = "m68k",
         LLVMInitializeM68kTargetInfo,
         LLVMInitializeM68kTarget,
