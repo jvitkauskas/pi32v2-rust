@@ -13,6 +13,12 @@ fn classify_ret<Ty>(ret: &mut ArgAbi<'_, Ty>) {
     if !ret.layout.is_sized() {
         return;
     }
+    if ret.is_ignore() {
+        // clang returns an empty struct through a hidden pointer, as any aggregate, where Rust returns nothing:
+        // a C function returning one can't be declared or defined in Rust yet (rustc's codegen has no
+        // indirect return of a zero-sized value).
+        return;
+    }
     if ret.layout.is_aggregate() {
         ret.make_indirect();
     } else {
@@ -27,6 +33,14 @@ where
     if !arg.layout.is_sized() {
         return;
     }
+    if arg.is_ignore() {
+        // clang passes an empty struct as it passes any aggregate, by reference to a copy: it takes an argument
+        // slot (also among variadic arguments), so ignoring it would move every later argument.
+        if arg.layout.is_zst() {
+            arg.make_indirect_from_ignore();
+        }
+        return;
+    }
     if arg.layout.pass_indirectly_in_non_rustic_abis(cx) || arg.layout.is_aggregate() {
         arg.make_indirect();
     } else {
@@ -38,13 +52,8 @@ pub(crate) fn compute_abi_info<'a, Ty, C>(cx: &C, fn_abi: &mut FnAbi<'a, Ty>)
 where
     Ty: TyAbiInterface<'a, C> + Copy,
 {
-    if !fn_abi.ret.is_ignore() {
-        classify_ret(&mut fn_abi.ret);
-    }
+    classify_ret(&mut fn_abi.ret);
     for arg in fn_abi.args.iter_mut() {
-        if arg.is_ignore() {
-            continue;
-        }
         classify_arg(cx, arg);
     }
 }

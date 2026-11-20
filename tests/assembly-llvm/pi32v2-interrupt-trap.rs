@@ -7,7 +7,7 @@
 // instruction on the AC791N, so the CPU exception) and a goto to itself, not a call to abort().
 
 #![crate_type = "rlib"]
-#![feature(no_core, abi_pi32v2_interrupt, intrinsics, rustc_attrs)]
+#![feature(no_core, abi_pi32v2_interrupt, asm_experimental_arch, intrinsics, rustc_attrs)]
 #![no_core]
 
 extern crate minicore;
@@ -21,9 +21,12 @@ unsafe extern "C" {
 }
 
 // CHECK-LABEL: timer_isr:
-// CHECK: [--sp] = {{.*}}rets
-// CHECK: call tick
-// CHECK: rti
+// CHECK: [--sp] = {psr, reti}
+// CHECK-NEXT: [--sp] = {rets, r3-r0}
+// CHECK-NEXT: call tick
+// CHECK-NEXT: {rets, r3-r0} = [sp++]
+// CHECK-NEXT: {psr, reti} = [sp++]
+// CHECK-NEXT: rti
 #[no_mangle]
 pub extern "pi32v2-interrupt" fn timer_isr() {
     unsafe { tick() }
@@ -37,4 +40,14 @@ pub extern "pi32v2-interrupt" fn timer_isr() {
 #[no_mangle]
 pub fn stop() -> ! {
     abort()
+}
+
+// A call in asm writes rets: with clobber_abi("C"), a function with no other call saves its own.
+// CHECK-LABEL: asm_call:
+// CHECK: [--sp] = rets
+// CHECK: call ext
+// CHECK: pc = [sp++]
+#[no_mangle]
+pub unsafe fn asm_call() {
+    asm!("call ext", clobber_abi("C"));
 }

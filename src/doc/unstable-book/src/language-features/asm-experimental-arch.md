@@ -41,7 +41,7 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | AVR          | `reg_iw`       | `r25r24`, `X`, `Z`                 | `w`                  |
 | AVR          | `reg_ptr`      | `X`, `Z`                           | `e`                  |
 | MSP430       | `reg`          | `r[0-15]`                          | `r`                  |
-| pi32v2       | `reg`          | `r[0-6]`, `r[8-15]`                | `r`                  |
+| pi32v2       | `reg`          | `r[0-15]` (`r7` can't be named)    | `r`                  |
 | pi32v2       | `sreg`         | `rets`                             | Only clobbers        |
 | M68k         | `reg`          | `d[0-7]`, `a[0-7]`                 | `r`                  |
 | M68k         | `reg_data`     | `d[0-7]`                           | `d`                  |

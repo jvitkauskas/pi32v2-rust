@@ -11,13 +11,16 @@ This branch is the release tag `1.100.0` with the pi32v2 port on top:
   32 bits);
 - a built-in target, **`pi32v2-unknown-none`** (tier 3, `no_std`; `src/doc/rustc/src/platform-support/pi32v2-unknown-none.md`),
   and `pi32v2` as a `target_arch` of its own: no JSON target specification or `-Zjson-target-spec` is needed;
-- **`asm!`** (`#![feature(asm_experimental_arch)]`): the register class `reg` (`r0`-`r15` but `r7`, the frame base),
+- **`asm!`** (`#![feature(asm_experimental_arch)]`): the register class `reg` (`r0`-`r15`; `r7`, the frame base, can't
+  be named),
   the clobber-only `sreg` (`rets`), `clobber_abi("C")` (`r0`-`r3` and `rets`), and the flags in `psr` clobbered
   unless `preserves_flags`;
 - an interrupt ABI, **`extern "pi32v2-interrupt" fn()`** (`#![feature(abi_pi32v2_interrupt)]`): the backend's
   `"interrupt"` attribute, as clang's `__attribute__((interrupt))`;
-- C-variadic `va_arg` as clang lowers it (word slots, aggregates by pointer; compared with clang's code, not run on
-  hardware), for defining one with `#![feature(c_variadic_experimental_arch)]`.
+- C-variadic `va_arg` as clang lowers it (word slots, no alignment above a word; `tests/assembly-llvm/c-variadic/pi32v2.rs`
+  compares it with clang's code), for defining one with `#![feature(c_variadic_experimental_arch)]`;
+- empty struct arguments passed as clang passes them (by reference to a copy), not left out. Returning one still
+  differs from clang, which returns it through a hidden pointer.
 
 The code generator is LLVM's PI32V2 target from [jvitkauskas/pi32v2-llvm](https://github.com/jvitkauskas/pi32v2-llvm)
 (LLVM 23.1.5, as Rust 1.100 uses): rustc is built against that LLVM (`bootstrap.pi32v2.toml`), not against its own

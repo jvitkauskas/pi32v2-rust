@@ -20,8 +20,8 @@ pub(crate) fn target() -> Target {
 
         options: TargetOptions {
             // The instruction set with floating point, revision 1, as m-apps' C uses it (-mcpu=r3), so that Rust
-            // and C share target attributes and inline into each other under LTO. `-C target-cpu=ac791n` also
-            // leaves out the forms that chip's hardware doesn't do as documented.
+            // and C share target attributes and inline into each other under LTO. (`-C target-cpu=ac791n`
+            // exists, but the code generator doesn't use it yet.)
             cpu: "r3".into(),
             // The pi32v2 LLVM toolchain's lld.
             linker: Some("ld.lld".into()),

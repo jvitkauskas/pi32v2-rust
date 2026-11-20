@@ -16,10 +16,12 @@ its own `src/llvm-project`.
 
 - `no_std` only: `core` (and `alloc` with an allocator), built with `-Zbuild-std=core`.
 - The CPU is `r3` (the instruction set with floating point, revision 1), as C code for these chips is usually built
-  (`clang -target pi32v2 -mcpu=r3`). `-C target-cpu=ac791n` also leaves out the instruction forms that chip's hardware
-  doesn't do as documented.
-- The C ABI is clang's for the target: arguments in `r0`-`r3`, then the stack, aggregates by reference to a copy,
-  results through a hidden pointer, and `r4`-`r15` and `rets` preserved.
+  (`clang -target pi32v2 -mcpu=r3`). `-C target-cpu=ac791n` exists, but the code generator doesn't use it yet, and
+  inline assembly isn't checked against what that chip's hardware does (it runs `popcnt` as a no-op, for example).
+- The C ABI is clang's for the target: arguments in `r0`-`r3`, then the stack, aggregates (empty structs too) by
+  reference to a copy, aggregate results through a hidden pointer, and `r4`-`r15` and `rets` preserved. One
+  difference: clang returns an empty struct through a hidden pointer, and Rust returns nothing, so a C function
+  returning one can't be called from Rust.
 - Atomics: loads and stores of up to 32 bits, and fences (`csync`). Read-modify-write atomics are calls to `__sync_*`
   functions in this backend, which nothing provides, so compare-and-swap isn't offered (`atomic_cas: false`).
 - Panics: a trap is `btbclr`, which the AC791N takes as an illegal instruction (its CPU exception, with `EMU_MSG` 2),
@@ -41,11 +43,13 @@ llvm-config = "/path/to/pi32v2-llvm/bin/llvm-config"
 ## Building Rust programs
 
 ```sh
-RUSTC_BOOTSTRAP=1 cargo build --release --target pi32v2-unknown-none -Zbuild-std=core
+RUSTC=/path/to/rust/build/host/stage1/bin/rustc RUSTC_BOOTSTRAP=1 \
+  cargo build --release --target pi32v2-unknown-none -Zbuild-std=core
 ```
 
-Inline assembly (`asm!`, with `#![feature(asm_experimental_arch)]`) has the register class `reg` (`r0`-`r15`, but not
-`r7`, the frame base) and the clobber-only `sreg` (`rets`); `clobber_abi("C")` clobbers `r0`-`r3` and `rets`, and
+Inline assembly (`asm!`, with `#![feature(asm_experimental_arch)]`) has the register class `reg` (`r0`-`r15`; `r7`
+can't be named, as it is the frame base in a function with a frame pointer, but in one without, LLVM may give it to a
+`reg` operand like any other) and the clobber-only `sreg` (`rets`); `clobber_abi("C")` clobbers `r0`-`r3` and `rets`, and
 the flags in `psr` are clobbered unless `preserves_flags`. Interrupt handlers are `extern "pi32v2-interrupt" fn()`
 (`#![feature(abi_pi32v2_interrupt)]`).
 
