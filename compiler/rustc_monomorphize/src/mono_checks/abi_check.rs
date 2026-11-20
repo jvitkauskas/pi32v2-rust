@@ -2,6 +2,7 @@
 //! that target feature is enabled both on the callee and all callers.
 use rustc_abi::{BackendRepr, CanonAbi, ExternAbi, RegKind, X86Call};
 use rustc_hir::{CRATE_HIR_ID, HirId};
+use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::{self, Location, traversal};
 use rustc_middle::ty::layout::{FnAbiRequest, codegen_handle_fn_abi_err};
 use rustc_middle::ty::{self, Instance, InstanceKind, Ty, TyCtxt};
@@ -175,7 +176,12 @@ fn do_check_pi32v2_zst_return<'tcx>(
         return;
     }
     let ret = &fn_abi.ret;
-    if ret.layout.is_sized() && ret.layout.is_zst() && ret.layout.ty.is_adt() {
+    // An uninhabited type (`enum Never {}`) is a function that doesn't return, C's noreturn void.
+    if ret.layout.is_sized()
+        && ret.layout.is_zst()
+        && ret.layout.ty.is_adt()
+        && !ret.layout.is_uninhabited()
+    {
         let (span, _hir_id) = loc();
         tcx.dcx().emit_err(diagnostics::AbiErrorPi32v2ZstReturn {
             span,
@@ -221,7 +227,10 @@ fn check_instance_abi<'tcx>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>) {
         )
     };
     do_check_unsized_params(tcx, abi, /*is_call*/ false, loc);
-    do_check_pi32v2_zst_return(tcx, abi, /*is_call*/ false, loc);
+    // A naked function's body is its own assembly, which can follow the C convention itself.
+    if !tcx.codegen_instance_attrs(instance.def).flags.contains(CodegenFnAttrFlags::NAKED) {
+        do_check_pi32v2_zst_return(tcx, abi, /*is_call*/ false, loc);
+    }
     do_check_simd_vector_abi(tcx, abi, instance.def_id(), /*is_call*/ false, loc);
 }
 

@@ -19,11 +19,13 @@ its own `src/llvm-project`.
   (`clang -target pi32v2 -mcpu=r3`). `-C target-cpu=ac791n` exists, but the code generator doesn't use it yet, and
   inline assembly isn't checked against what that chip's hardware does (it runs `popcnt` as a no-op, for example).
 - The C ABI is clang's for the target: arguments in `r0`-`r3`, then the stack, aggregates (empty structs too) by
-  reference to a copy, aggregate results through a hidden pointer, and `r4`-`r15` and `rets` preserved. Integers
-  wider than 64 bits (`i128`) go as clang's `_BitInt(128)`: by reference to a copy, and returned through a hidden
-  pointer. clang also returns a zero-sized struct through a hidden pointer, which rustc can't do yet, so a C-ABI
-  function returning one (defined, imported or through a function pointer) is a compile error rather than a
-  mismatch.
+  reference to a copy, aggregate results through a hidden pointer, and `r4`-`r15` and `rets` preserved. `i128` and
+  `f128` go in words, as LLVM passes them to its own runtime calls (which compiler-builtins defines), not as clang's
+  `_BitInt(128)`, which goes by reference; C has no `__int128` on this target. clang returns a zero-sized struct
+  through a hidden pointer, which rustc can't do yet, so a C-ABI function returning one (defined, imported or
+  through a function pointer) is a compile error rather than a mismatch, unless it is a naked function. One
+  corner remains: a `#[repr(C)]` enum whose variants all hold zero-sized data is a bare tag to rustc, and its C
+  equivalent (a struct of the tag and a union of empty members) goes by reference.
 - Atomics: loads and stores of up to 32 bits, and fences (`csync`). Read-modify-write atomics are calls to `__sync_*`
   functions in this backend, which nothing provides, so compare-and-swap isn't offered (`atomic_cas: false`).
 - Panics: a trap is `btbclr`, which the AC791N takes as an illegal instruction (its CPU exception, with `EMU_MSG` 2),

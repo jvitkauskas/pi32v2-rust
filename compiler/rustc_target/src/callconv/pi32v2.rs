@@ -4,7 +4,8 @@
 //   a result through a hidden pointer argument (sret);
 // - scalars are passed directly; integers narrower than 32 bits are extended to 32 (the backend promotes
 //   i1/i8/i16 to i32, and passes i32/f32 in r0..r3, then on the stack; i64/f64 take two slots);
-// - wider scalars (i128) go as aggregates do, as clang's _BitInt(65..=128);
+// - wider scalars (i128, f128) are direct, in words, as LLVM's runtime calls take them (not clang's
+//   _BitInt(128), which goes by reference);
 // - an empty struct takes an argument slot, by reference to a copy.
 
 use rustc_abi::TyAbiInterface;
@@ -21,9 +22,7 @@ fn classify_ret<Ty>(ret: &mut ArgAbi<'_, Ty>) {
         // (rustc_monomorphize's ABI check).
         return;
     }
-    // An integer wider than 64 bits (i128 here, _BitInt(65..=128) in clang) comes back through a hidden
-    // pointer too.
-    if ret.layout.is_aggregate() || ret.layout.size.bits() > 64 {
+    if ret.layout.is_aggregate() {
         ret.make_indirect();
     } else {
         ret.extend_integer_width_to(32);
@@ -45,12 +44,10 @@ where
         }
         return;
     }
-    // Integers wider than 64 bits (i128 here, _BitInt(65..=128) in clang) go by reference to a copy too
-    // (clang's byval, which the backend passes as one pointer word).
-    if arg.layout.pass_indirectly_in_non_rustic_abis(cx)
-        || arg.layout.is_aggregate()
-        || arg.layout.size.bits() > 64
-    {
+    // i128 and f128 stay direct, as LLVM lowers them and passes them to its own runtime calls (__udivti3,
+    // __addtf3, which compiler-builtins defines as extern "C" functions): in words, in registers then on the
+    // stack. clang's _BitInt(128) goes by reference instead; C has no __int128 on this target.
+    if arg.layout.pass_indirectly_in_non_rustic_abis(cx) || arg.layout.is_aggregate() {
         arg.make_indirect();
     } else {
         arg.extend_integer_width_to(32);
