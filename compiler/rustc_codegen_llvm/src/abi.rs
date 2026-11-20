@@ -468,6 +468,11 @@ impl<'ll, 'tcx> FnAbiLlvmExt<'ll, 'tcx> for FnAbi<'tcx, Ty<'tcx>> {
             CanonAbi::Interrupt(InterruptKind::RiscvSupervisor) => {
                 func_attrs.push(llvm::CreateAttrStringValue(cx.llcx, "interrupt", "supervisor"))
             }
+            // The pi32v2 backend takes "interrupt" (as clang's __attribute__((interrupt))): it saves every register
+            // the handler uses and psr/reti, and returns with rti.
+            CanonAbi::Interrupt(InterruptKind::Pi32v2) => {
+                func_attrs.push(llvm::CreateAttrString(cx.llcx, "interrupt"))
+            }
             CanonAbi::Arm(ArmCall::CCmseNonSecureEntry) => {
                 func_attrs.push(llvm::CreateAttrString(cx.llcx, "cmse_nonsecure_entry"))
             }
@@ -819,6 +824,7 @@ pub(crate) fn to_llvm_calling_convention(sess: &Session, abi: CanonAbi) -> llvm:
             InterruptKind::Avr => llvm::AvrInterrupt,
             InterruptKind::AvrNonBlocking => llvm::AvrNonBlockingInterrupt,
             InterruptKind::Msp430 => llvm::Msp430Intr,
+            InterruptKind::Pi32v2 => llvm::CCallConv,
             InterruptKind::RiscvMachine | InterruptKind::RiscvSupervisor => llvm::CCallConv,
             InterruptKind::X86 => llvm::X86_Intr,
         },

@@ -1195,6 +1195,17 @@ pub(super) fn emit_va_arg<'ll, 'tcx>(
             AllowHigherAlign::Yes,
             ForceRightAdjust::No,
         ),
+        // As clang's PI32V2ABIInfo::EmitVAArg: va_list points at the next word, an aggregate is read through a
+        // pointer to its copy, and nothing is aligned higher than a word.
+        Arch::Pi32v2 => emit_ptr_va_arg(
+            bx,
+            addr,
+            layout,
+            if layout.is_aggregate() { PassMode::Indirect } else { PassMode::Direct },
+            SlotSize::Bytes4,
+            AllowHigherAlign::No,
+            ForceRightAdjust::No,
+        ),
         Arch::CSky => emit_ptr_va_arg(
             bx,
             addr,

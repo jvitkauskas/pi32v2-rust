@@ -353,6 +353,10 @@ declare_features! (
     (unstable, abi_gpu_kernel, "1.86.0", Some(135467)),
     /// Allows `extern "msp430-interrupt" fn()`.
     (unstable, abi_msp430_interrupt, "1.16.0", Some(38487)),
+    // no-tracking-issue-start
+    /// Allows `extern "pi32v2-interrupt" fn()` (the pi32v2-rust fork only, so no rust-lang tracking issue).
+    (unstable, abi_pi32v2_interrupt, "1.100.0", None),
+    // no-tracking-issue-end
     /// Allows `extern "ptx-*" fn()`.
     (unstable, abi_ptx, "1.15.0", Some(38788)),
     /// Allows `extern "riscv-interrupt-m" fn()` and `extern "riscv-interrupt-s" fn()`.

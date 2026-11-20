@@ -331,6 +331,7 @@ pub fn conv_to_fn_attribute<'gcc>(sess: &Session, conv: CanonAbi) -> Option<FnAt
             InterruptKind::Avr => FnAttribute::AvrSignal,
             InterruptKind::AvrNonBlocking => FnAttribute::AvrInterrupt,
             InterruptKind::Msp430 => FnAttribute::Msp430Interrupt,
+            InterruptKind::Pi32v2 => sess.dcx().fatal("GCC has no pi32v2 backend"),
             InterruptKind::RiscvMachine => FnAttribute::RiscvInterrupt("machine"),
             InterruptKind::RiscvSupervisor => FnAttribute::RiscvInterrupt("supervisor"),
             InterruptKind::X86 => FnAttribute::X86Interrupt,

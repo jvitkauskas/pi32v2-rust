@@ -138,6 +138,7 @@ impl<'tcx> Stable<'tcx> for CanonAbi {
                 InterruptKind::Avr => CallConvention::AvrInterrupt,
                 InterruptKind::AvrNonBlocking => CallConvention::AvrNonBlockingInterrupt,
                 InterruptKind::Msp430 => CallConvention::Msp430Intr,
+                InterruptKind::Pi32v2 => CallConvention::Pi32v2Interrupt,
                 InterruptKind::RiscvMachine | InterruptKind::RiscvSupervisor => {
                     CallConvention::RiscvInterrupt
                 }

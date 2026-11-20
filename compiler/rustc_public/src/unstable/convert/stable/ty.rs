@@ -1031,6 +1031,7 @@ impl<'tcx> Stable<'tcx> for rustc_abi::ExternAbi {
             ExternAbi::PtxKernel => Abi::PtxKernel,
             ExternAbi::GpuKernel => Abi::GpuKernel,
             ExternAbi::Msp430Interrupt => Abi::Msp430Interrupt,
+            ExternAbi::Pi32v2Interrupt => Abi::Pi32v2Interrupt,
             ExternAbi::X86Interrupt => Abi::X86Interrupt,
             ExternAbi::EfiApi => Abi::EfiApi,
             ExternAbi::AvrInterrupt => Abi::AvrInterrupt,

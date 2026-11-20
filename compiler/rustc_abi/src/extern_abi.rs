@@ -91,6 +91,8 @@ pub enum ExternAbi {
     AvrInterrupt,
     AvrNonBlockingInterrupt,
     Msp430Interrupt,
+    /// JieLi pi32v2: saves every register it uses and psr/reti, and returns with rti
+    Pi32v2Interrupt,
     RiscvInterruptM,
     RiscvInterruptS,
     X86Interrupt,
@@ -197,6 +199,7 @@ abi_impls! {
             GpuKernel =><= "gpu-kernel",
             LlvmIntrinsic =><= "llvm-intrinsic",
             Msp430Interrupt =><= "msp430-interrupt",
+            Pi32v2Interrupt =><= "pi32v2-interrupt",
             PtxKernel =><= "ptx-kernel",
             RiscvInterruptM =><= "riscv-interrupt-m",
             RiscvInterruptS =><= "riscv-interrupt-s",
@@ -328,6 +331,7 @@ impl ExternAbi {
             Self::AvrInterrupt
             | Self::AvrNonBlockingInterrupt
             | Self::Msp430Interrupt
+            | Self::Pi32v2Interrupt
             | Self::RiscvInterruptM
             | Self::RiscvInterruptS
             | Self::X86Interrupt => {

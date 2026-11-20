@@ -379,6 +379,7 @@ target | std | host | notes
 [`mipsisa64r6-unknown-linux-gnuabi64`](platform-support/mips-release-6.md) | ? |  | 64-bit MIPS Release 6 Big Endian
 [`mipsisa64r6el-unknown-linux-gnuabi64`](platform-support/mips-release-6.md) | ✓ | ✓ | 64-bit MIPS Release 6 Little Endian
 `msp430-none-elf` | * |  | 16-bit MSP430 microcontrollers
+[`pi32v2-unknown-none`](platform-support/pi32v2-unknown-none.md) | * |  | JieLi pi32v2 (AC79), bare metal
 [`powerpc-unknown-freebsd`](platform-support/freebsd.md) | ? |  | PowerPC FreeBSD
 [`powerpc-unknown-helenos`](platform-support/helenos.md) | ✓ |  | PowerPC HelenOS
 [`powerpc-unknown-linux-gnuspe`](platform-support/powerpc-unknown-linux-gnuspe.md) | ✓ |  | PowerPC SPE Linux

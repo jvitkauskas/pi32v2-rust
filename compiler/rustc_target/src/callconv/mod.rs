@@ -802,8 +802,7 @@ impl<'a, Ty> FnAbi<'a, Ty> {
             Arch::RiscV32 | Arch::RiscV64 => riscv::compute_abi_info(cx, self),
             Arch::Wasm32 | Arch::Wasm64 => wasm::compute_abi_info(cx, self),
             Arch::Bpf => bpf::compute_abi_info(cx, self),
-            // JieLi pi32v2 (a JSON target spec with "arch": "pi32v2")
-            Arch::Other(name) if name == "pi32v2" => pi32v2::compute_abi_info(cx, self),
+            Arch::Pi32v2 => pi32v2::compute_abi_info(cx, self),
             arch @ (Arch::SpirV | Arch::Other(_)) => {
                 panic!("no lowering implemented for {arch}")
             }

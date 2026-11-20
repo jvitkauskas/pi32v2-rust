@@ -403,6 +403,9 @@
 //@ revisions: msp430_none_elf
 //@ [msp430_none_elf] compile-flags: --target msp430-none-elf
 //@ [msp430_none_elf] needs-llvm-components: msp430
+//@ revisions: pi32v2_unknown_none
+//@ [pi32v2_unknown_none] compile-flags: --target pi32v2-unknown-none
+//@ [pi32v2_unknown_none] needs-llvm-components: pi32v2
 //@ revisions: powerpc64_sony_ps3
 //@ [powerpc64_sony_ps3] compile-flags: --target powerpc64-sony-ps3
 //@ [powerpc64_sony_ps3] needs-llvm-components: powerpc

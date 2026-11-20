@@ -16,6 +16,7 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 - AVR
 - MSP430
 - M68k
+- pi32v2
 - CSKY
 - SPARC
 - Xtensa
@@ -40,6 +41,8 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | AVR          | `reg_iw`       | `r25r24`, `X`, `Z`                 | `w`                  |
 | AVR          | `reg_ptr`      | `X`, `Z`                           | `e`                  |
 | MSP430       | `reg`          | `r[0-15]`                          | `r`                  |
+| pi32v2       | `reg`          | `r[0-6]`, `r[8-15]`                | `r`                  |
+| pi32v2       | `sreg`         | `rets`                             | Only clobbers        |
 | M68k         | `reg`          | `d[0-7]`, `a[0-7]`                 | `r`                  |
 | M68k         | `reg_data`     | `d[0-7]`                           | `d`                  |
 | M68k         | `reg_addr`     | `a[0-3]`                           | `a`                  |
@@ -76,6 +79,8 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | AVR          | `reg`, `reg_upper`              | None           | `i8`                                    |
 | AVR          | `reg_pair`, `reg_iw`, `reg_ptr` | None           | `i16`                                   |
 | MSP430       | `reg`                           | None           | `i8`, `i16`                             |
+| pi32v2       | `reg`                           | None           | `i8`, `i16`, `i32`, `f32`               |
+| pi32v2       | `sreg`                          | N/A            | Only clobbers                           |
 | M68k         | `reg`, `reg_addr`               | None           | `i16`, `i32`                            |
 | M68k         | `reg_data`                      | None           | `i8`, `i16`, `i32`                      |
 | CSKY         | `reg`                           | None           | `i8`, `i16`, `i32`                      |
@@ -133,7 +138,7 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | Architecture | Unsupported register                    | Reason                                                                                                                                                                              |
 | ------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | All          | `sp`, `r14`/`o6` (SPARC)                | The stack pointer must be restored to its original value at the end of an asm code block.                                                                                           |
-| All          | `fr` (Hexagon) `$fp` (MIPS), `Y` (AVR), `r4` (MSP430), `a6` (M68k), `r30`/`i6` (SPARC) | The frame pointer cannot be used as an input or output.                                                             |
+| All          | `fr` (Hexagon) `$fp` (MIPS), `Y` (AVR), `r4` (MSP430), `r7` (pi32v2), `a6` (M68k), `r30`/`i6` (SPARC) | The frame pointer cannot be used as an input or output.                                                             |
 | All          | `r19` (Hexagon) | These are used internally by LLVM as "base pointer" for functions with complex stack frames.                                                                              |
 | MIPS         | `$0` or `$zero`                         | This is a constant zero register which can't be modified.                                                                                                                           |
 | MIPS         | `$1` or `$at`                           | Reserved for assembler.                                                                                                                                                             |
@@ -143,6 +148,7 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | Hexagon      | `lr`                                    | This is the link register which cannot be used as an input or output.                                                                                                               |
 | AVR          | `r0`, `r1`, `r1r0`                      | Due to an issue in LLVM, the `r0` and `r1` registers cannot be used as inputs or outputs.  If modified, they must be restored to their original values before the end of the block. |
 |MSP430        | `r0`, `r2`, `r3`                        | These are the program counter, status register, and constant generator respectively. Neither the status register nor constant generator can be written to.                          |
+| pi32v2       | `sp`, `pc`, `psr`, `reti` and the other special registers | The stack pointer, program counter and status register, and special registers, which the asm reads and writes itself. `rets` can only be clobbered. |
 | M68k         | `a4`, `a5`                              | Used internally by LLVM for the base pointer and global base pointer. |
 | CSKY         | `r7`, `r28`                             | Used internally by LLVM for the base pointer and global base pointer. |
 | CSKY         | `r8`                                    | Used internally by LLVM for the frame pointer. |
@@ -173,6 +179,7 @@ This feature tracks `asm!` and `global_asm!` support for the following architect
 | SPARC        | `reg`          | None     | `%o0`          | None          |
 | CSKY         | `reg`          | None     | `r0`           | None          |
 | CSKY         | `freg`         | None     | `f0`           | None          |
+| pi32v2       | `reg`          | None     | `r0`           | None          |
 | Xtensa       | `reg`          | None     | `a2`           | None          |
 | Xtensa       | `freg`         | None     | `f0`           | None          |
 
@@ -183,6 +190,8 @@ These flags registers must be restored upon exiting the asm block if the `preser
   - The status register `SREG`.
 - MSP430
   - The status register `r2`.
+- pi32v2
+  - The flags (N, Z, C, V) in `psr`.
 - M68k
   - The condition code register `ccr`.
 - SPARC
