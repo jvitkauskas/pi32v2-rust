@@ -3,7 +3,9 @@
 // - aggregates, as arguments and as results, are passed by reference to a caller-made copy (not `byval`),
 //   a result through a hidden pointer argument (sret);
 // - scalars are passed directly; integers narrower than 32 bits are extended to 32 (the backend promotes
-//   i1/i8/i16 to i32, and passes i32/f32 in r0..r3, then on the stack; i64/f64 take two slots).
+//   i1/i8/i16 to i32, and passes i32/f32 in r0..r3, then on the stack; i64/f64 take two slots);
+// - wider scalars (i128) go as aggregates do, as clang's _BitInt(65..=128);
+// - an empty struct takes an argument slot, by reference to a copy.
 
 use rustc_abi::TyAbiInterface;
 
@@ -14,12 +16,14 @@ fn classify_ret<Ty>(ret: &mut ArgAbi<'_, Ty>) {
         return;
     }
     if ret.is_ignore() {
-        // clang returns an empty struct through a hidden pointer, as any aggregate, where Rust returns nothing:
-        // a C function returning one can't be declared or defined in Rust yet (rustc's codegen has no
-        // indirect return of a zero-sized value).
+        // clang returns an empty struct through a hidden pointer, as any aggregate, where Rust returns nothing.
+        // rustc's codegen has no indirect return of a zero-sized value, so such a signature is refused instead
+        // (rustc_monomorphize's ABI check).
         return;
     }
-    if ret.layout.is_aggregate() {
+    // An integer wider than 64 bits (i128 here, _BitInt(65..=128) in clang) comes back through a hidden
+    // pointer too.
+    if ret.layout.is_aggregate() || ret.layout.size.bits() > 64 {
         ret.make_indirect();
     } else {
         ret.extend_integer_width_to(32);
@@ -41,7 +45,12 @@ where
         }
         return;
     }
-    if arg.layout.pass_indirectly_in_non_rustic_abis(cx) || arg.layout.is_aggregate() {
+    // Integers wider than 64 bits (i128 here, _BitInt(65..=128) in clang) go by reference to a copy too
+    // (clang's byval, which the backend passes as one pointer word).
+    if arg.layout.pass_indirectly_in_non_rustic_abis(cx)
+        || arg.layout.is_aggregate()
+        || arg.layout.size.bits() > 64
+    {
         arg.make_indirect();
     } else {
         arg.extend_integer_width_to(32);

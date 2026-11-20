@@ -19,8 +19,9 @@ This branch is the release tag `1.100.0` with the pi32v2 port on top:
   `"interrupt"` attribute, as clang's `__attribute__((interrupt))`;
 - C-variadic `va_arg` as clang lowers it (word slots, no alignment above a word; `tests/assembly-llvm/c-variadic/pi32v2.rs`
   compares it with clang's code), for defining one with `#![feature(c_variadic_experimental_arch)]`;
-- empty struct arguments passed as clang passes them (by reference to a copy), not left out. Returning one still
-  differs from clang, which returns it through a hidden pointer.
+- empty struct arguments passed as clang passes them (by reference to a copy), not left out, and `i128` as clang's
+  `_BitInt(128)`; a C-ABI function returning a zero-sized struct, which clang returns through a hidden pointer and
+  rustc can't yet, is a compile error.
 
 The code generator is LLVM's PI32V2 target from [jvitkauskas/pi32v2-llvm](https://github.com/jvitkauskas/pi32v2-llvm)
 (LLVM 23.1.5, as Rust 1.100 uses): rustc is built against that LLVM (`bootstrap.pi32v2.toml`), not against its own
@@ -47,7 +48,8 @@ Tested on an FM-1 (from RAM, through [m-apps](https://github.com/jvitkauskas/m-a
 `tests/ui/feature-gates/feature-gate-abi-pi32v2-interrupt.rs`.
 
 Not there yet: atomic read-modify-write (the backend makes them `__sync_*` calls, so the target has no CAS), `i64`
-operands in `asm!`, and `std`.
+operands in `asm!`, returning zero-sized structs through the C ABI, crate metadata in an object file (an `rlib`'s
+raw metadata members make `ld.lld` warn), and `std`.
 
 Licence: Rust's, MIT OR Apache-2.0 ([COPYRIGHT](COPYRIGHT), [LICENSE-MIT](LICENSE-MIT),
 [LICENSE-APACHE](LICENSE-APACHE)).

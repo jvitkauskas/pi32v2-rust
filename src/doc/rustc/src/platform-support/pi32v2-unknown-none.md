@@ -19,14 +19,18 @@ its own `src/llvm-project`.
   (`clang -target pi32v2 -mcpu=r3`). `-C target-cpu=ac791n` exists, but the code generator doesn't use it yet, and
   inline assembly isn't checked against what that chip's hardware does (it runs `popcnt` as a no-op, for example).
 - The C ABI is clang's for the target: arguments in `r0`-`r3`, then the stack, aggregates (empty structs too) by
-  reference to a copy, aggregate results through a hidden pointer, and `r4`-`r15` and `rets` preserved. One
-  difference: clang returns an empty struct through a hidden pointer, and Rust returns nothing, so a C function
-  returning one can't be called from Rust.
+  reference to a copy, aggregate results through a hidden pointer, and `r4`-`r15` and `rets` preserved. Integers
+  wider than 64 bits (`i128`) go as clang's `_BitInt(128)`: by reference to a copy, and returned through a hidden
+  pointer. clang also returns a zero-sized struct through a hidden pointer, which rustc can't do yet, so a C-ABI
+  function returning one (defined, imported or through a function pointer) is a compile error rather than a
+  mismatch.
 - Atomics: loads and stores of up to 32 bits, and fences (`csync`). Read-modify-write atomics are calls to `__sync_*`
   functions in this backend, which nothing provides, so compare-and-swap isn't offered (`atomic_cas: false`).
 - Panics: a trap is `btbclr`, which the AC791N takes as an illegal instruction (its CPU exception, with `EMU_MSG` 2),
   followed by a branch to itself. `-C panic=immediate-abort` needs no `abort` function.
-- Linking: `ld.lld` from the pi32v2 LLVM toolchain, with a linker script of your own.
+- Linking: `ld.lld` from the pi32v2 LLVM toolchain, with a linker script of your own. rustc has no object-file
+  format for the target's crate metadata, so an `rlib` carries it as raw archive members, which `ld.lld` warns
+  about (an error with `--fatal-warnings`); a `staticlib` doesn't.
 
 ## Building the target
 

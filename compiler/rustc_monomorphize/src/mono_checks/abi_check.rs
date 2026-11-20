@@ -162,6 +162,29 @@ fn do_check_unsized_params<'tcx>(
     }
 }
 
+/// JieLi pi32v2: clang returns a zero-sized struct through a hidden pointer, as any aggregate, and rustc
+/// returns nothing (its codegen has no indirect return of a zero-sized value), which would move every
+/// argument of a C function by one register. Refused rather than miscompiled.
+fn do_check_pi32v2_zst_return<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fn_abi: &FnAbi<'tcx, Ty<'tcx>>,
+    is_call: bool,
+    loc: impl Fn() -> (Span, HirId),
+) {
+    if tcx.sess.target.arch != rustc_target::spec::Arch::Pi32v2 || fn_abi.conv.is_rustic_abi() {
+        return;
+    }
+    let ret = &fn_abi.ret;
+    if ret.layout.is_sized() && ret.layout.is_zst() && ret.layout.ty.is_adt() {
+        let (span, _hir_id) = loc();
+        tcx.dcx().emit_err(diagnostics::AbiErrorPi32v2ZstReturn {
+            span,
+            ty: ret.layout.ty,
+            is_call,
+        });
+    }
+}
+
 /// Checks the ABI of an Instance, emitting an error when:
 ///
 /// - a non-rustic ABI uses unsized parameters
@@ -198,6 +221,7 @@ fn check_instance_abi<'tcx>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>) {
         )
     };
     do_check_unsized_params(tcx, abi, /*is_call*/ false, loc);
+    do_check_pi32v2_zst_return(tcx, abi, /*is_call*/ false, loc);
     do_check_simd_vector_abi(tcx, abi, instance.def_id(), /*is_call*/ false, loc);
 }
 
@@ -276,6 +300,7 @@ fn check_call_site_abi<'tcx>(
     };
 
     do_check_unsized_params(tcx, callee_abi, /*is_call*/ true, loc);
+    do_check_pi32v2_zst_return(tcx, callee_abi, /*is_call*/ true, loc);
     do_check_simd_vector_abi(tcx, callee_abi, caller.def_id(), /*is_call*/ true, loc);
 }
 
