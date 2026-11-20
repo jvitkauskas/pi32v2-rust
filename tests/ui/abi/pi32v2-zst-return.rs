@@ -66,3 +66,19 @@ unsafe extern "C" {
 pub unsafe fn call_stop() -> Never {
     stop(1)
 }
+
+// A struct is a struct to clang, uninhabited or not: still refused.
+#[repr(C)]
+pub struct NeverZ {
+    impossible: Never,
+}
+
+unsafe extern "C" {
+    fn stop_struct(code: u32) -> NeverZ;
+}
+
+#[no_mangle]
+pub unsafe fn call_stop_struct() -> NeverZ {
+    stop_struct(7)
+    //~^ ERROR this function call returns the zero-sized type `NeverZ`
+}

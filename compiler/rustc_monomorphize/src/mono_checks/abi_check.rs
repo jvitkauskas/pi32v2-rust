@@ -176,12 +176,10 @@ fn do_check_pi32v2_zst_return<'tcx>(
         return;
     }
     let ret = &fn_abi.ret;
-    // An uninhabited type (`enum Never {}`) is a function that doesn't return, C's noreturn void.
-    if ret.layout.is_sized()
-        && ret.layout.is_zst()
-        && ret.layout.ty.is_adt()
-        && !ret.layout.is_uninhabited()
-    {
+    // An enum with no variants (`enum Never {}`) is a function that doesn't return, C's noreturn void.
+    // A struct is a struct to clang, uninhabited or not: returned through a hidden pointer.
+    let never = ret.layout.ty.is_enum() && ret.layout.is_uninhabited();
+    if ret.layout.is_sized() && ret.layout.is_zst() && ret.layout.ty.is_adt() && !never {
         let (span, _hir_id) = loc();
         tcx.dcx().emit_err(diagnostics::AbiErrorPi32v2ZstReturn {
             span,

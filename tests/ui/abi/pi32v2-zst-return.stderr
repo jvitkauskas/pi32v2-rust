@@ -22,5 +22,13 @@ LL |     f(1);
    |
    = help: on pi32v2, clang returns an empty struct through a hidden pointer and rustc can't yet; return `()` or a type with a size
 
-error: aborting due to 3 previous errors
+error: this function call returns the zero-sized type `NeverZ`, which this target's C ABI returns through a hidden pointer
+  --> $DIR/pi32v2-zst-return.rs:82:5
+   |
+LL |     stop_struct(7)
+   |     ^^^^^^^^^^^^^^ function called here
+   |
+   = help: on pi32v2, clang returns an empty struct through a hidden pointer and rustc can't yet; return `()` or a type with a size
+
+error: aborting due to 4 previous errors
 
