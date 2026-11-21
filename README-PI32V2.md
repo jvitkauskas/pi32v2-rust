@@ -54,7 +54,7 @@ C's `__int128` in both directions. Tests:
 `tests/codegen-llvm/pi32v2-interrupt.rs`, `tests/assembly-llvm/pi32v2-interrupt-trap.rs`, `tests/ui/asm/pi32v2/`,
 `tests/ui/feature-gates/feature-gate-abi-pi32v2-interrupt.rs`.
 
-8- and 16-bit atomics need two toolchain fixes that aren't merged yet
+8- and 16-bit atomics need two toolchain fixes that are newer than the latest release
 ([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3) in the runtime,
 [pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2) in the compiler); 32-bit ones don't.
 

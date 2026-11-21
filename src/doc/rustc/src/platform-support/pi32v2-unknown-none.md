@@ -39,7 +39,7 @@ its own `src/llvm-project`. Its `pi32v2` branch is LLVM 23.1.6; what this page s
   compare-and-swap are calls to `__sync_*` functions, which the pi32v2 LLVM toolchain's runtime library defines
   (`lib/clang/23/lib/pi32v2/libclang_rt.builtins.a`; they mask interrupts for the operation). A program that uses
   them adds that library to its link; one that only loads and stores needs nothing. There are no 64-bit atomics.
-  Two fixes that 8- and 16-bit atomics need aren't merged there yet: the runtime's 1- and 2-byte
+  8- and 16-bit atomics need two fixes that are newer than the latest release too: the runtime's 1- and 2-byte
   functions mishandled a compare-and-swap whose expected value has its top bit set
   ([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3)), and the compiler stopped on such an atomic
   kept on the stack ([pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2)).
