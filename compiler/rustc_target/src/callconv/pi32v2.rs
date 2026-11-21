@@ -46,7 +46,8 @@ where
     }
     // i128 and f128 stay direct, as LLVM lowers them and passes them to its own runtime calls (__udivti3,
     // __addtf3, which compiler-builtins defines as extern "C" functions): in words, in registers then on the
-    // stack. clang's _BitInt(128) goes by reference instead; C has no __int128 on this target.
+    // stack. clang's _BitInt(128) goes by reference instead; its __int128 (-fforce-enable-int128) goes as
+    // i128 does.
     if arg.layout.pass_indirectly_in_non_rustic_abis(cx) || arg.layout.is_aggregate() {
         arg.make_indirect();
     } else {

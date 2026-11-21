@@ -10,7 +10,6 @@
 #![no_core]
 
 extern crate minicore;
-use minicore::*;
 
 // CHECK: define{{.*}}i32 @cas_8()
 #[cfg(target_has_atomic = "8")]

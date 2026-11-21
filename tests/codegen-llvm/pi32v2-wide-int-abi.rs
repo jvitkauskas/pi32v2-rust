@@ -5,7 +5,7 @@
 // i128 is passed in words, as LLVM lowers it and passes it to its own runtime calls: a u128
 // division is a call to __udivti3, which compiler-builtins defines as an extern "C" function, so
 // that definition must take its operands by value, not by reference. (clang's _BitInt(128) goes
-// by reference instead; C has no __int128 on this target.)
+// by reference instead; its __int128, which it has with -fforce-enable-int128, goes as i128 does.)
 
 #![crate_type = "rlib"]
 #![feature(no_core)]

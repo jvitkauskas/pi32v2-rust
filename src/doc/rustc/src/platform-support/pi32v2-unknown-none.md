@@ -15,7 +15,8 @@ LLVM, which upstream LLVM doesn't have: build rustc against that LLVM (`llvm-con
 its own `src/llvm-project`. Its `pi32v2` branch is LLVM 23.1.6; what this page says about traps, `__int128`, the
 `ac791n` warnings and reassembling `--emit=asm` output needs release `pi32v2-23.1.6-1` or later.
 
-- `no_std` only: `core` (and `alloc` with an allocator), built with `-Zbuild-std=core`.
+- `no_std` only: `core`, built with `-Zbuild-std=core`, and `alloc` with an allocator, built with
+  `-Zbuild-std=core,alloc`.
 - The CPU is `r3` (the instruction set with floating point, revision 1), as C code for these chips is usually built
   (`clang -target pi32v2 -mcpu=r3`). `-C target-cpu=ac791n` generates the same code, and makes the assembler warn
   about the instructions that chip's hardware runs differently, in `asm!` and `global_asm!` too ("popcnt.rr does
@@ -37,6 +38,10 @@ its own `src/llvm-project`. Its `pi32v2` branch is LLVM 23.1.6; what this page s
   compare-and-swap are calls to `__sync_*` functions, which the pi32v2 LLVM toolchain's runtime library defines
   (`lib/clang/23/lib/pi32v2/libclang_rt.builtins.a`; they mask interrupts for the operation). A program that uses
   them adds that library to its link; one that only loads and stores needs nothing. There are no 64-bit atomics.
+  Two fixes that 8- and 16-bit atomics need are newer than release `pi32v2-23.1.6-1`: the runtime's 1- and 2-byte
+  functions mishandled a compare-and-swap whose expected value has its top bit set
+  ([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3)), and the compiler stopped on such an atomic
+  kept on the stack ([pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2)).
 - Panics: a trap is `btbclr`, which the AC791N takes as an illegal instruction (its CPU exception, with `EMU_MSG` 2),
   followed by a branch to itself. `-C panic=immediate-abort` needs no `abort` function.
 - Linking: `ld.lld` from the pi32v2 LLVM toolchain, with a linker script of your own. rustc has no object-file

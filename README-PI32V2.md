@@ -54,6 +54,10 @@ C's `__int128` in both directions. Tests:
 `tests/codegen-llvm/pi32v2-interrupt.rs`, `tests/assembly-llvm/pi32v2-interrupt-trap.rs`, `tests/ui/asm/pi32v2/`,
 `tests/ui/feature-gates/feature-gate-abi-pi32v2-interrupt.rs`.
 
+8- and 16-bit atomics need two toolchain fixes newer than `pi32v2-23.1.6-1`
+([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3) in the runtime,
+[pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2) in the compiler); 32-bit ones don't.
+
 Not there yet: 64-bit atomics, `i64` operands in `asm!`, returning zero-sized structs through the C ABI, crate metadata in an object file (an `rlib`'s
 raw metadata members make `ld.lld` warn), and `std`.
 
