@@ -81,4 +81,24 @@ There's no test runner for the target. Programs run on the hardware, for example
 ## Cross-compilation toolchains and C code
 
 C code for the target is built with the same LLVM's clang, `clang -target pi32v2 -mcpu=r3`, and can be linked with
-Rust, including with cross-language LTO (`-C linker-plugin-lto`; rustc emits ThinLTO bitcode).
+Rust, including with cross-language LTO: `-C linker-plugin-lto -C lto=fat`. Without `-C lto=fat` rustc's bitcode is
+for ThinLTO, which `ld.lld` keeps apart from the bitcode of clang's `-flto`: the link works, and nothing is inlined
+between the two languages.
+
+## Code size
+
+Measured on [m-bootloader](https://github.com/jvitkauskas/m-bootloader)'s port to Rust, 17 KB of code:
+
+- **`opt-level = "s"`, or `"z"` with `-inline-minsize-hint-threshold=50`.** Plain `"z"` is about 8% bigger than `"s"`:
+  size-minimum code inlines almost nothing, and the smallest helpers of `core` (an iterator's `next`, a slice's
+  `get`) stay calls. The option, in pi32v2-llvm from release `pi32v2-23.1.6-2`, lets them be inlined, and then
+  `"z"` is 1% smaller than `"s"`. It goes to whatever generates the code:
+  `-C llvm-args=-inline-minsize-hint-threshold=50` for rustc,
+  `-mllvm -inline-minsize-hint-threshold=50` for `ld.lld` under LTO.
+- **Let the linker optimise the program** (`--emit=obj` with the two LTO options above, linked by `ld.lld`), where
+  the choice is between that and a `staticlib` with `-C lto`. rustc keeps every `#[no_mangle]` function of a
+  `staticlib`, used or not, and optimises around them: 8% bigger.
+- **Statics that are all zeros.** A static with one byte that isn't zero is stored whole in the image: an empty slice
+  (`&[]`) or a `NonNull::dangling()` in it is enough. `Option` of a reference, with `None`, is zeros.
+- **`-C panic=immediate-abort`** (with `-Zbuild-std`), so that a bounds check costs a compare and a trap, not a
+  formatted message.
