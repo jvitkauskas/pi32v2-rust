@@ -735,6 +735,7 @@ fn human_readable_target_arch(os: Symbol) -> Option<&'static str> {
         Mips64r6 => "MIPS-64 release 6",
         Msp430 => "MSP430",
         Nvptx64 => "NVidia GPU",
+        Pi32v2 => "pi32v2",
         PowerPC => "PowerPC",
         PowerPC64 => "PowerPC64",
         RiscV32 => "RISC-V RV32",
