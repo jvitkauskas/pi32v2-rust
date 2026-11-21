@@ -628,6 +628,8 @@ pub enum CallConvention {
 
     Msp430Intr,
 
+    Pi32v2Interrupt,
+
     PtxKernel,
 
     GpuKernel,

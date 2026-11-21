@@ -164,6 +164,29 @@ pub(crate) struct AbiErrorUnsupportedUnsizedParameter<'a> {
     "this function {$is_call ->
         [true] call
         *[false] definition
+    } returns the zero-sized type `{$ty}`, which this target's C ABI returns through a hidden pointer"
+)]
+#[help(
+    "on pi32v2, clang returns an empty struct through a hidden pointer and rustc can't yet; return `()` or a type with a size"
+)]
+pub(crate) struct AbiErrorPi32v2ZstReturn<'a> {
+    #[primary_span]
+    #[label(
+        "function {$is_call ->
+            [true] called
+            *[false] defined
+        } here"
+    )]
+    pub span: Span,
+    pub ty: Ty<'a>,
+    pub is_call: bool,
+}
+
+#[derive(Diagnostic)]
+#[diag(
+    "this function {$is_call ->
+        [true] call
+        *[false] definition
     } uses SIMD vector type `{$ty}` which is not currently supported with the chosen ABI"
 )]
 pub(crate) struct AbiErrorUnsupportedVectorType<'a> {

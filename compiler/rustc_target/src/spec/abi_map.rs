@@ -58,6 +58,7 @@ impl AbiMap {
             Arch::Avr => ArchKind::Avr,
             Arch::LoongArch32 | Arch::LoongArch64 => ArchKind::LoongArch,
             Arch::Msp430 => ArchKind::Msp430,
+            Arch::Pi32v2 => ArchKind::Pi32v2,
             Arch::Nvptx64 => ArchKind::Nvptx,
             Arch::RiscV32 | Arch::RiscV64 => ArchKind::Riscv,
             Arch::SpirV => ArchKind::Spirv,
@@ -190,6 +191,9 @@ impl AbiMap {
             (ExternAbi::Msp430Interrupt, ArchKind::Msp430) => {
                 CanonAbi::Interrupt(InterruptKind::Msp430)
             }
+            (ExternAbi::Pi32v2Interrupt, ArchKind::Pi32v2) => {
+                CanonAbi::Interrupt(InterruptKind::Pi32v2)
+            }
             (ExternAbi::RiscvInterruptM, ArchKind::Riscv) => {
                 CanonAbi::Interrupt(InterruptKind::RiscvMachine)
             }
@@ -203,6 +207,7 @@ impl AbiMap {
                 ExternAbi::AvrInterrupt
                 | ExternAbi::AvrNonBlockingInterrupt
                 | ExternAbi::Msp430Interrupt
+                | ExternAbi::Pi32v2Interrupt
                 | ExternAbi::RiscvInterruptM
                 | ExternAbi::RiscvInterruptS
                 | ExternAbi::X86Interrupt,
@@ -223,6 +228,7 @@ enum ArchKind {
     LoongArch,
     Msp430,
     Nvptx,
+    Pi32v2,
     Riscv,
     X86,
     X86_64,

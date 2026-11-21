@@ -17,6 +17,7 @@ fastcall-unwind
 gpu-kernel
 llvm-intrinsic
 msp430-interrupt
+pi32v2-interrupt
 ptx-kernel
 riscv-interrupt-m
 riscv-interrupt-s

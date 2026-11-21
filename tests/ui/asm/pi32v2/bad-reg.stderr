@@ -1,0 +1,82 @@
+error: invalid register `r7`: r7 is used internally by LLVM as the frame base and cannot be used as an operand for inline asm
+  --> $DIR/bad-reg.rs:18:18
+   |
+LL |         asm!("", out("r7") _);
+   |                  ^^^^^^^^^^^
+
+error: invalid register `sp`: the stack pointer cannot be used as an operand for inline asm
+  --> $DIR/bad-reg.rs:20:18
+   |
+LL |         asm!("", out("sp") _);
+   |                  ^^^^^^^^^^^
+
+error: invalid register `pc`: the program counter cannot be used as an operand for inline asm
+  --> $DIR/bad-reg.rs:22:18
+   |
+LL |         asm!("", out("pc") _);
+   |                  ^^^^^^^^^^^
+
+error: invalid register `psr`: the status register cannot be used as an operand for inline asm; use `preserves_flags` to keep its flags
+  --> $DIR/bad-reg.rs:24:18
+   |
+LL |         asm!("", out("psr") _);
+   |                  ^^^^^^^^^^^^
+
+error: invalid register `reti`: special registers cannot be used as operands for inline asm; read or write them in the asm itself
+  --> $DIR/bad-reg.rs:26:18
+   |
+LL |         asm!("", out("reti") _);
+   |                  ^^^^^^^^^^^^^
+
+error: register class `sreg` can only be used as a clobber, not as an input or output
+  --> $DIR/bad-reg.rs:28:18
+   |
+LL |         asm!("", in("rets") x);
+   |                  ^^^^^^^^^^^^
+
+error: register class `sreg` can only be used as a clobber, not as an input or output
+  --> $DIR/bad-reg.rs:31:26
+   |
+LL |         asm!("/* {} */", in(sreg) x);
+   |                          ^^^^^^^^^^
+
+error: register `r0` conflicts with register `r0`
+  --> $DIR/bad-reg.rs:36:30
+   |
+LL |         asm!("", in("r0") x, out("r0") _);
+   |                  ----------  ^^^^^^^^^^^ register `r0`
+   |                  |
+   |                  register `r0`
+   |
+help: use `lateout` instead of `out` to avoid conflict
+  --> $DIR/bad-reg.rs:36:18
+   |
+LL |         asm!("", in("r0") x, out("r0") _);
+   |                  ^^^^^^^^^^
+
+error: type `i32` cannot be used with this register class
+  --> $DIR/bad-reg.rs:28:29
+   |
+LL |         asm!("", in("rets") x);
+   |                             ^
+   |
+   = note: register class `sreg` supports these types: 
+
+error: type `i32` cannot be used with this register class
+  --> $DIR/bad-reg.rs:31:35
+   |
+LL |         asm!("/* {} */", in(sreg) x);
+   |                                   ^
+   |
+   = note: register class `sreg` supports these types: 
+
+error: type `i64` cannot be used with this register class
+  --> $DIR/bad-reg.rs:34:34
+   |
+LL |         asm!("/* {} */", in(reg) y);
+   |                                  ^
+   |
+   = note: register class `reg` supports these types: i8, i16, i32, f32
+
+error: aborting due to 11 previous errors
+

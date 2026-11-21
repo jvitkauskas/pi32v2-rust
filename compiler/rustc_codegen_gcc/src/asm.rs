@@ -752,6 +752,8 @@ fn reg_class_to_gcc(reg_class: InlineAsmRegClass) -> &'static str {
         InlineAsmRegClass::Mips(MipsInlineAsmRegClass::reg) => "d", // more specific than "r"
         InlineAsmRegClass::Mips(MipsInlineAsmRegClass::freg | MipsInlineAsmRegClass::wreg) => "f",
         InlineAsmRegClass::Msp430(Msp430InlineAsmRegClass::reg) => "r",
+        InlineAsmRegClass::Pi32v2(Pi32v2InlineAsmRegClass::reg) => "r",
+        InlineAsmRegClass::Pi32v2(Pi32v2InlineAsmRegClass::sreg) => unreachable!("clobber-only"),
         // https://github.com/gcc-mirror/gcc/blob/master/gcc/config/nvptx/nvptx.md -> look for
         // "define_constraint".
         InlineAsmRegClass::Nvptx(NvptxInlineAsmRegClass::reg16) => "h",
@@ -924,6 +926,8 @@ fn dummy_output_type<'gcc, 'tcx>(cx: &CodegenCx<'gcc, 'tcx>, reg: InlineAsmRegCl
         InlineAsmRegClass::Sparc(SparcInlineAsmRegClass::qreg) => cx.type_f128(),
         InlineAsmRegClass::Sparc(SparcInlineAsmRegClass::yreg) => unreachable!("clobber-only"),
         InlineAsmRegClass::Msp430(Msp430InlineAsmRegClass::reg) => cx.type_i16(),
+        InlineAsmRegClass::Pi32v2(Pi32v2InlineAsmRegClass::reg) => cx.type_i32(),
+        InlineAsmRegClass::Pi32v2(Pi32v2InlineAsmRegClass::sreg) => unreachable!("clobber-only"),
         InlineAsmRegClass::M68k(M68kInlineAsmRegClass::reg) => cx.type_i32(),
         InlineAsmRegClass::M68k(M68kInlineAsmRegClass::reg_addr) => cx.type_i32(),
         InlineAsmRegClass::M68k(M68kInlineAsmRegClass::reg_data) => cx.type_i32(),
@@ -1180,6 +1184,7 @@ fn modifier_to_gcc(
         InlineAsmRegClass::S390x(_) => None,
         InlineAsmRegClass::Sparc(_) => None,
         InlineAsmRegClass::Msp430(_) => None,
+        InlineAsmRegClass::Pi32v2(_) => None,
         InlineAsmRegClass::M68k(_) => None,
         InlineAsmRegClass::CSKY(_) => None,
         InlineAsmRegClass::SpirV(SpirVInlineAsmRegClass::reg) => {

@@ -1326,6 +1326,7 @@ pub fn fn_can_unwind(tcx: TyCtxt<'_>, fn_def_id: Option<DefId>, abi: ExternAbi) 
         | SysV64 { unwind } => unwind,
         PtxKernel
         | Msp430Interrupt
+        | Pi32v2Interrupt
         | X86Interrupt
         | GpuKernel
         | EfiApi

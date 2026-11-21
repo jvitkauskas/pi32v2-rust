@@ -2,6 +2,7 @@
 //! that target feature is enabled both on the callee and all callers.
 use rustc_abi::{BackendRepr, CanonAbi, ExternAbi, RegKind, X86Call};
 use rustc_hir::{CRATE_HIR_ID, HirId};
+use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::{self, Location, traversal};
 use rustc_middle::ty::layout::{FnAbiRequest, codegen_handle_fn_abi_err};
 use rustc_middle::ty::{self, Instance, InstanceKind, Ty, TyCtxt};
@@ -162,6 +163,32 @@ fn do_check_unsized_params<'tcx>(
     }
 }
 
+/// JieLi pi32v2: clang returns a zero-sized struct through a hidden pointer, as any aggregate, and rustc
+/// returns nothing (its codegen has no indirect return of a zero-sized value), which would move every
+/// argument of a C function by one register. Refused rather than miscompiled.
+fn do_check_pi32v2_zst_return<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fn_abi: &FnAbi<'tcx, Ty<'tcx>>,
+    is_call: bool,
+    loc: impl Fn() -> (Span, HirId),
+) {
+    if tcx.sess.target.arch != rustc_target::spec::Arch::Pi32v2 || fn_abi.conv.is_rustic_abi() {
+        return;
+    }
+    let ret = &fn_abi.ret;
+    // An enum with no variants (`enum Never {}`) is a function that doesn't return, C's noreturn void.
+    // A struct is a struct to clang, uninhabited or not: returned through a hidden pointer.
+    let never = ret.layout.ty.is_enum() && ret.layout.is_uninhabited();
+    if ret.layout.is_sized() && ret.layout.is_zst() && ret.layout.ty.is_adt() && !never {
+        let (span, _hir_id) = loc();
+        tcx.dcx().emit_err(diagnostics::AbiErrorPi32v2ZstReturn {
+            span,
+            ty: ret.layout.ty,
+            is_call,
+        });
+    }
+}
+
 /// Checks the ABI of an Instance, emitting an error when:
 ///
 /// - a non-rustic ABI uses unsized parameters
@@ -198,6 +225,10 @@ fn check_instance_abi<'tcx>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>) {
         )
     };
     do_check_unsized_params(tcx, abi, /*is_call*/ false, loc);
+    // A naked function's body is its own assembly, which can follow the C convention itself.
+    if !tcx.codegen_instance_attrs(instance.def).flags.contains(CodegenFnAttrFlags::NAKED) {
+        do_check_pi32v2_zst_return(tcx, abi, /*is_call*/ false, loc);
+    }
     do_check_simd_vector_abi(tcx, abi, instance.def_id(), /*is_call*/ false, loc);
 }
 
@@ -276,6 +307,7 @@ fn check_call_site_abi<'tcx>(
     };
 
     do_check_unsized_params(tcx, callee_abi, /*is_call*/ true, loc);
+    do_check_pi32v2_zst_return(tcx, callee_abi, /*is_call*/ true, loc);
     do_check_simd_vector_abi(tcx, callee_abi, caller.def_id(), /*is_call*/ true, loc);
 }
 

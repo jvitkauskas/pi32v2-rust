@@ -858,6 +858,7 @@ pub enum Abi {
     SysV64 { unwind: bool },
     PtxKernel,
     Msp430Interrupt,
+    Pi32v2Interrupt,
     X86Interrupt,
     GpuKernel,
     EfiApi,
