@@ -44,6 +44,12 @@ cp bootstrap.pi32v2.toml bootstrap.toml     # set llvm-config in it
 RUSTC_BOOTSTRAP=1 RUSTC=build/host/stage1/bin/rustc cargo build --release --target pi32v2-unknown-none -Zbuild-std=core
 ```
 
+A tag `pi32v2-<Rust version>-<n>` (`pi32v2-1.100.0-1`) makes GitHub Actions build a package for Linux (x64, arm64),
+Windows (x64) and macOS (arm64, x64) and publish them as a release: rustc and rustdoc, the computer's own standard
+library, `core` and `alloc` built for pi32v2, and the libraries' sources for `-Zbuild-std`
+(`.github/workflows/pi32v2-release.yml`, which names the pi32v2 LLVM toolchain release it builds on, and
+`.github/pi32v2/package.py`, which also builds the package on your own computer).
+
 Tested on an FM-1 and an SMK-37 (from RAM, through [m-apps](https://github.com/jvitkauskas/m-apps)): a Rust TIMER5
 handler, `extern "pi32v2-interrupt"`, at 10 kHz over a computation that came out the same with and without it; `icfg`
 and `csync` through `asm!`; a bounds-check failure ending in the CPU exception; compare-and-swap, swap, fetch-add,

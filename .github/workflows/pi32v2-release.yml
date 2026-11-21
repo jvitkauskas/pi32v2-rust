@@ -1,0 +1,137 @@
+# Builds the pi32v2 Rust package for Linux (x64, arm64), Windows (x64) and macOS (arm64, x64) with
+# .github/pi32v2/package.py. A pi32v2-<Rust version>-<n> tag publishes the packages as a release with SHA256SUMS;
+# run by hand, it only builds them (as workflow artifacts).
+name: pi32v2 Rust release
+
+on:
+  push:
+    tags:
+      - 'pi32v2-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The pi32v2 LLVM toolchain release (jvitkauskas/pi32v2-llvm) that rustc is built on: its sources for rustc's
+  # code generator, and its package to link the checks' pi32v2 programs with
+  PI32V2_LLVM_RELEASE: pi32v2-23.1.6-2
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x64, os: ubuntu-24.04, tests: true }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm }
+          - { platform: windows-x64, os: windows-2025 }
+          - { platform: macos-arm64, os: macos-26 }
+          - { platform: macos-x64, os: macos-15-intel }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: rust
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: jvitkauskas/pi32v2-llvm
+          ref: ${{ env.PI32V2_LLVM_RELEASE }}
+          path: llvm-project
+          persist-credentials: false
+          sparse-checkout: |
+            cmake
+            llvm
+            third-party
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/pi32v2-* ]]; then
+            v=${GITHUB_REF_NAME#pi32v2-}
+            rust=$(cat rust/src/version)
+            [[ "$v" == "$rust"-* ]] || { echo "::error::the tag is not pi32v2-$rust-<n>, for Rust $rust"; exit 1; }
+          else
+            v=dev-${GITHUB_SHA::9}
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: The pi32v2 LLVM toolchain
+        id: toolchain
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=pi32v2-llvm-${PI32V2_LLVM_RELEASE#pi32v2-}-${{ matrix.platform }}
+          asset=$name.${{ runner.os == 'Windows' && 'zip' || 'tar.xz' }}
+          cd "$RUNNER_TEMP"
+          gh release download "$PI32V2_LLVM_RELEASE" -R jvitkauskas/pi32v2-llvm -p "$asset" -p SHA256SUMS
+          python - "$asset" <<'EOF'
+          import hashlib, shutil, sys
+          asset = sys.argv[1]
+          sums = dict(reversed(line.split()) for line in open("SHA256SUMS"))
+          if hashlib.sha256(open(asset, "rb").read()).hexdigest() != sums[asset]:
+              sys.exit(f"{asset} is not the file SHA256SUMS names")
+          shutil.unpack_archive(asset, "toolchain")
+          EOF
+          ls "toolchain/$name/bin"
+          echo "dir=$RUNNER_TEMP/toolchain/$name" >> "$GITHUB_OUTPUT"
+      - name: Tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Tools (Windows)
+        if: runner.os == 'Windows'
+        run: python -m pip install ninja
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: pi32v2-${{ matrix.platform }}
+          max-size: 2G
+          variant: ${{ runner.os == 'Windows' && 'sccache' || 'ccache' }}
+      # (in the runner's own shell: Git's bash on Windows puts its link.exe before the compiler's)
+      - name: Build, test and pack
+        run: >
+          python rust/.github/pi32v2/package.py --src rust --llvm llvm-project
+          --build "${{ runner.temp }}/b" --out out
+          --version ${{ steps.version.outputs.version }} --llvm-release ${{ env.PI32V2_LLVM_RELEASE }}
+          --toolchain "${{ steps.toolchain.outputs.dir }}"
+          --launcher ${{ runner.os == 'Windows' && 'sccache' || 'ccache' }}
+          ${{ matrix.tests && '--tests' || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pi32v2-rust-${{ matrix.platform }}
+          path: |
+            out/*.tar.xz
+            out/*.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/pi32v2-')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/pi32v2
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=${GITHUB_REF_NAME#pi32v2-}
+          cd assets && sha256sum * > SHA256SUMS && cat SHA256SUMS && cd ..
+          sed -e "s/@VERSION@/$v/g" -e "s/@RUST@/${v%-*}/g" -e "s/@COMMIT@/$GITHUB_SHA/g" \
+            -e "s/@LLVM@/$PI32V2_LLVM_RELEASE/g" .github/pi32v2/RELEASE.md > notes.md
+          gh release create "$GITHUB_REF_NAME" assets/* --title "pi32v2 Rust $v" --notes-file notes.md --verify-tag
