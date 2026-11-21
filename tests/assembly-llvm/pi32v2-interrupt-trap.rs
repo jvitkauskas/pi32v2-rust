@@ -35,8 +35,7 @@ pub extern "pi32v2-interrupt" fn timer_isr() {
 // CHECK-LABEL: stop:
 // CHECK-NOT: call abort
 // CHECK: btbclr
-// CHECK-NEXT: [[L:.Ltmp[0-9]+]]:
-// CHECK-NEXT: goto [[L]]
+// CHECK-NEXT: goto -2
 #[no_mangle]
 pub fn stop() -> ! {
     abort()

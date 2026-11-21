@@ -19,16 +19,20 @@ This branch is the release tag `1.100.0` with the pi32v2 port on top:
   `"interrupt"` attribute, as clang's `__attribute__((interrupt))`;
 - C-variadic `va_arg` as clang lowers it (word slots, no alignment above a word; `tests/assembly-llvm/c-variadic/pi32v2.rs`
   compares it with clang's code), for defining one with `#![feature(c_variadic_experimental_arch)]`;
+- compare-and-swap and the other read-modify-write atomics, up to 32 bits: calls to the `__sync_*` functions of the
+  pi32v2 LLVM toolchain's runtime library (`libclang_rt.builtins.a`), which a program that uses them links;
 - empty struct arguments passed as clang passes them (by reference to a copy), not left out; a C-ABI function
   returning a zero-sized struct, which clang returns through a hidden pointer and rustc can't yet, is a compile
   error (naked functions excepted). `i128` goes in words, as LLVM's runtime calls take it, not as clang's
   `_BitInt(128)`.
 
 The code generator is LLVM's PI32V2 target from [jvitkauskas/pi32v2-llvm](https://github.com/jvitkauskas/pi32v2-llvm)
-(LLVM 23.1.5, as Rust 1.100 uses): rustc is built against that LLVM (`bootstrap.pi32v2.toml`), not against its own
-`src/llvm-project`, which this build does not need. With that LLVM's commit "Traps: btbclr and a goto to itself", a
-panic with `-Cpanic=immediate-abort` is a trap instruction rather than a call to `abort()`. With cross-language LTO
-(`-Clinker-plugin-lto`), the linker's LLVM generates the code, so it needs that commit too.
+(LLVM 23.1.6 on its `pi32v2` branch, release `pi32v2-23.1.6-1` or later): rustc is built against that LLVM
+(`bootstrap.pi32v2.toml`), not against its own `src/llvm-project`, which this build does not need. From that release
+on, a panic with `-Cpanic=immediate-abort` is a trap instruction rather than a call to `abort()`, C's `__int128`
+(`clang -fforce-enable-int128`) is laid out and passed as Rust's `i128`, and `-C target-cpu=ac791n` makes the
+assembler warn about the instructions that chip runs differently, in `asm!` too. With cross-language LTO
+(`-Clinker-plugin-lto`), the linker's LLVM generates the code, so `ld.lld` must be from that release as well.
 
 ```sh
 cp bootstrap.pi32v2.toml bootstrap.toml     # set llvm-config in it
@@ -41,15 +45,16 @@ cp bootstrap.pi32v2.toml bootstrap.toml     # set llvm-config in it
 RUSTC_BOOTSTRAP=1 RUSTC=build/host/stage1/bin/rustc cargo build --release --target pi32v2-unknown-none -Zbuild-std=core
 ```
 
-Tested on an FM-1 (from RAM, through [m-apps](https://github.com/jvitkauskas/m-apps)): a Rust TIMER5 handler,
-`extern "pi32v2-interrupt"`, at 10 kHz over a computation that came out the same with and without it; `icfg` and
-`csync` through `asm!`; and a bounds-check failure ending in the CPU exception. Tests:
+Tested on an FM-1 and an SMK-37 (from RAM, through [m-apps](https://github.com/jvitkauskas/m-apps)): a Rust TIMER5
+handler, `extern "pi32v2-interrupt"`, at 10 kHz over a computation that came out the same with and without it; `icfg`
+and `csync` through `asm!`; a bounds-check failure ending in the CPU exception; compare-and-swap, swap, fetch-add,
+min/max and `AtomicBool` operations through the toolchain's `__sync_*` functions; and `u128` passed between Rust and
+C's `__int128` in both directions. Tests:
 `tests/assembly-llvm/asm/pi32v2-types.rs`, `tests/codegen-llvm/asm/pi32v2-clobbers.rs`,
 `tests/codegen-llvm/pi32v2-interrupt.rs`, `tests/assembly-llvm/pi32v2-interrupt-trap.rs`, `tests/ui/asm/pi32v2/`,
 `tests/ui/feature-gates/feature-gate-abi-pi32v2-interrupt.rs`.
 
-Not there yet: atomic read-modify-write (the backend makes them `__sync_*` calls, so the target has no CAS), `i64`
-operands in `asm!`, returning zero-sized structs through the C ABI, crate metadata in an object file (an `rlib`'s
+Not there yet: 64-bit atomics, `i64` operands in `asm!`, returning zero-sized structs through the C ABI, crate metadata in an object file (an `rlib`'s
 raw metadata members make `ld.lld` warn), and `std`.
 
 Licence: Rust's, MIT OR Apache-2.0 ([COPYRIGHT](COPYRIGHT), [LICENSE-MIT](LICENSE-MIT),

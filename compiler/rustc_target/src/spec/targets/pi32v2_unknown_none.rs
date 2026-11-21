@@ -2,8 +2,9 @@ use crate::spec::{
     Arch, Cc, LinkerFlavor, Lld, PanicStrategy, RelocModel, Target, TargetMetadata, TargetOptions,
 };
 
-/// JieLi's pi32v2, the CPU of the AC79 chips (the AC791N in M-VAVE's FM-1 and SMK-37), bare metal, with the
-/// pi32v2-llvm fork's LLVM (https://github.com/jvitkauskas/pi32v2-llvm). See the platform-support page.
+/// JieLi's pi32v2, the CPU of the AC79 chips (the AC791N in M-VAVE's FM-1 and SMK-37), bare metal,
+/// with the pi32v2-llvm fork's LLVM (https://github.com/jvitkauskas/pi32v2-llvm). See the
+/// platform-support page.
 pub(crate) fn target() -> Target {
     Target {
         llvm_target: "pi32v2".into(),
@@ -19,17 +20,20 @@ pub(crate) fn target() -> Target {
         arch: Arch::Pi32v2,
 
         options: TargetOptions {
-            // The instruction set with floating point, revision 1, as m-apps' C uses it (-mcpu=r3), so that Rust
-            // and C share target attributes and inline into each other under LTO. (`-C target-cpu=ac791n`
-            // exists, but the code generator doesn't use it yet.)
+            // The instruction set with floating point, revision 1, as m-apps' C uses it (-mcpu=r3),
+            // so that Rust and C share target attributes and inline into each other under LTO. (`-C
+            // target-cpu=ac791n` generates the same code, and makes the assembler warn about the
+            // instructions that chip runs differently, in `asm!` too.)
             cpu: "r3".into(),
             // The pi32v2 LLVM toolchain's lld.
             linker: Some("ld.lld".into()),
             linker_flavor: LinkerFlavor::Gnu(Cc::No, Lld::Yes),
-            // Loads and stores of up to a word are single accesses, and a fence is csync, but the backend makes
-            // read-modify-write operations calls to __sync_* functions, which nothing here provides: no CAS.
+            // Loads and stores of up to a word are single accesses, and a fence is csync. The
+            // backend makes read-modify-write operations and compare-and-swap calls to __sync_*
+            // functions (1, 2 and 4 bytes), which the pi32v2 LLVM toolchain's runtime library
+            // (libclang_rt.builtins.a) defines, with interrupts masked: a program that uses them
+            // links that library.
             max_atomic_width: Some(32),
-            atomic_cas: false,
             panic_strategy: PanicStrategy::Abort,
             relocation_model: RelocModel::Static,
             emit_debug_gdb_scripts: false,
