@@ -28,6 +28,9 @@ from pathlib import Path
 TARGET = "pi32v2-unknown-none"
 WINDOWS = sys.platform == "win32"
 EXE = ".exe" if WINDOWS else ""
+# On macOS rustc strips what it links with "rust-objcopy" from its own directory, and cargo asks for that by
+# default in release builds (of build scripts too): LLVM's llvm-objcopy under that name, as Rust's releases have it.
+OBJCOPY = sys.platform == "darwin"
 # (the Rust host, LLVM's backend for it, the package's name for it)
 HOSTS = {
     ("linux", "x86_64"): ("x86_64-unknown-linux-gnu", "X86", "linux-x64"),
@@ -86,9 +89,10 @@ def llvm(src, build, prefix, backend, tests, launcher):
         # the C runtime rustc itself is built with there
         args += ["-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl", "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"]
     run("cmake", *args)
-    run("cmake", "--build", build, "--target", "install-distribution", *(["FileCheck"] if tests else []))
-    if tests:
-        shutil.copy2(build / "bin" / f"FileCheck{EXE}", prefix / "bin")
+    tools = (["FileCheck"] if tests else []) + (["llvm-objcopy"] if OBJCOPY else [])
+    run("cmake", "--build", build, "--target", "install-distribution", *tools)
+    for tool in tools:
+        shutil.copy2(build / "bin" / f"{tool}{EXE}", prefix / "bin")
 
 
 def toml(s):
@@ -296,7 +300,8 @@ def smoke(prefix, host, work, toolchain):
 
     hello = work / "hello.rs"
     hello.write_text('fn main() {\n    println!("{}", (1..=10).map(|n: u64| n * n).sum::<u64>());\n}\n')
-    run(rustc, "-O", hello, "-o", work / f"hello{EXE}", cwd=work)
+    # as cargo builds for release: optimised, debug information stripped
+    run(rustc, "-O", "-C", "strip=debuginfo", hello, "-o", work / f"hello{EXE}", cwd=work)
     if output(work / f"hello{EXE}").strip() != "385":
         sys.exit("smoke test: the program for this computer printed something else")
 
@@ -378,6 +383,10 @@ def main():
         shutil.rmtree(dist)
     x(src, config, rust_build, "dist", "rustc", "rust-std", "rust-src")
     merge(dist, prefix)
+    if OBJCOPY:
+        tools = prefix / "lib" / "rustlib" / host / "bin"
+        tools.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(llvm_prefix / "bin" / f"llvm-objcopy{EXE}", tools / f"rust-objcopy{EXE}")
     # the cargo x.py built everything with
     libraries(src, prefix, rust_build / host / "stage0" / "bin" / f"cargo{EXE}", build / "pi32v2-libraries")
     notes(src, llvm_src, prefix, name, host, a.llvm_release)
