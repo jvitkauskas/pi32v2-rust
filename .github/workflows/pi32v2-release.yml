@@ -46,6 +46,7 @@ jobs:
             cmake
             llvm
             third-party
+            libc
       - name: Version
         id: version
         shell: bash
