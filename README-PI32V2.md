@@ -27,12 +27,11 @@ This branch is the release tag `1.100.0` with the pi32v2 port on top:
   `_BitInt(128)`.
 
 The code generator is LLVM's PI32V2 target from [jvitkauskas/pi32v2-llvm](https://github.com/jvitkauskas/pi32v2-llvm)
-(LLVM 23.1.6 on its `pi32v2` branch, which is newer than the latest release, `pi32v2-23.1.5-5`): rustc is built
-against that LLVM (`bootstrap.pi32v2.toml`), not against its own `src/llvm-project`, which this build does not need.
-With that branch, a panic with `-Cpanic=immediate-abort` is a trap instruction rather than a call to `abort()`, C's `__int128`
+(LLVM 23.1.6, release `pi32v2-23.1.6-1` or later): rustc is built against that LLVM (`bootstrap.pi32v2.toml`), not
+against its own `src/llvm-project`, which this build does not need. From that release on, a panic with `-Cpanic=immediate-abort` is a trap instruction rather than a call to `abort()`, C's `__int128`
 (`clang -fforce-enable-int128`) is laid out and passed as Rust's `i128`, and `-C target-cpu=ac791n` makes the
 assembler warn about the instructions that chip runs differently, in `asm!` too. With cross-language LTO
-(`-Clinker-plugin-lto`), the linker's LLVM generates the code, so `ld.lld` must be from the same build.
+(`-Clinker-plugin-lto`), the linker's LLVM generates the code, so `ld.lld` must be from that release as well.
 
 ```sh
 cp bootstrap.pi32v2.toml bootstrap.toml     # set llvm-config in it
@@ -54,9 +53,9 @@ C's `__int128` in both directions. Tests:
 `tests/codegen-llvm/pi32v2-interrupt.rs`, `tests/assembly-llvm/pi32v2-interrupt-trap.rs`, `tests/ui/asm/pi32v2/`,
 `tests/ui/feature-gates/feature-gate-abi-pi32v2-interrupt.rs`.
 
-8- and 16-bit atomics need two toolchain fixes that are newer than the latest release
+8- and 16-bit atomics need that release for two toolchain fixes
 ([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3) in the runtime,
-[pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2) in the compiler); 32-bit ones don't.
+[pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2) in the compiler).
 
 Not there yet: 64-bit atomics, `i64` operands in `asm!`, returning zero-sized structs through the C ABI, crate metadata in an object file (an `rlib`'s
 raw metadata members make `ld.lld` warn), and `std`.

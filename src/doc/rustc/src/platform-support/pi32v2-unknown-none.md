@@ -13,8 +13,7 @@ JieLi's pi32v2, the CPU of the AC79 chips (such as the AC791N in M-VAVE's FM-1 a
 The code generator is the PI32V2 target of the [pi32v2-llvm](https://github.com/jvitkauskas/pi32v2-llvm) fork of
 LLVM, which upstream LLVM doesn't have: build rustc against that LLVM (`llvm-config` in `bootstrap.toml`), not against
 its own `src/llvm-project`. Its `pi32v2` branch is LLVM 23.1.6; what this page says about traps, `__int128`, the
-`ac791n` warnings and reassembling `--emit=asm` output needs that branch: it is newer than the latest release,
-`pi32v2-23.1.5-5`.
+`ac791n` warnings and reassembling `--emit=asm` output needs release `pi32v2-23.1.6-1` or later.
 
 - `no_std` only: `core`, built with `-Zbuild-std=core`, and `alloc` with an allocator, built with
   `-Zbuild-std=core,alloc`.
@@ -39,8 +38,8 @@ its own `src/llvm-project`. Its `pi32v2` branch is LLVM 23.1.6; what this page s
   compare-and-swap are calls to `__sync_*` functions, which the pi32v2 LLVM toolchain's runtime library defines
   (`lib/clang/23/lib/pi32v2/libclang_rt.builtins.a`; they mask interrupts for the operation). A program that uses
   them adds that library to its link; one that only loads and stores needs nothing. There are no 64-bit atomics.
-  8- and 16-bit atomics need two fixes that are newer than the latest release too: the runtime's 1- and 2-byte
-  functions mishandled a compare-and-swap whose expected value has its top bit set
+  8- and 16-bit atomics need that release too: before it, the runtime's 1- and 2-byte functions mishandled a
+  compare-and-swap whose expected value has its top bit set
   ([pi32v2-isa#3](https://github.com/jvitkauskas/pi32v2-isa/pull/3)), and the compiler stopped on such an atomic
   kept on the stack ([pi32v2-llvm#2](https://github.com/jvitkauskas/pi32v2-llvm/pull/2)).
 - Panics: a trap is `btbclr`, which the AC791N takes as an illegal instruction (its CPU exception, with `EMU_MSG` 2),
